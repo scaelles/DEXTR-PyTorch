@@ -51,7 +51,9 @@ To train and evaluate DEXTR on PASCAL (or PASCAL + SBD), please follow these add
   ./download_pretrained_psp_models.sh
   cd ..
   ```
-6. Run ```train_pascal.py```, after changing the default parameters, if necessary (eg. gpu_id).
+6. Set the paths in ```mypath.py```, so that they point to the location of PASCAL/SBD dataset.
+
+7. Run ```train_pascal.py```, after changing the default parameters, if necessary (eg. gpu_id).
 
 Enjoy!!
 
@@ -60,7 +62,7 @@ Enjoy!!
 If you use this code, please consider citing the following paper:
 
 	@Inproceedings{Man+18,
-	  Title          = { Deep Extreme Cut: From Extreme Points to Object Segmentation},
+	  Title          = {Deep Extreme Cut: From Extreme Points to Object Segmentation},
 	  Author         = {K.K. Maninis and S. Caelles and J. Pont-Tuset and L. {Van Gool}},
 	  Booktitle      = {Computer Vision and Pattern Recognition (CVPR)},
 	  Year           = {2018}
