@@ -1,7 +1,7 @@
 # Deep Extreme Cut (DEXTR)
 Visit our [project page](http://www.vision.ee.ethz.ch/~cvlsegmentation) for accessing the paper, and the pre-computed results.
 
-![DEXTR](doc/osvos.png)
+![DEXTR](doc/dextr.png)
 
 This is the implementation of our work `Deep Extreme Cut (DEXTR)`, for object segmentation from extreme points.
 
