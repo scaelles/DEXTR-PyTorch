@@ -8,34 +8,6 @@ import dataloaders.helpers as helpers
 import evaluation.evaluation as evaluation
 
 
-def eval_one_result_coco(coco_dataset, results):
-    import pycocotools.mask as mask_util
-
-    # Allocate
-    eval_result = dict()
-    eval_result["all_jaccards"] = np.zeros(len(coco_dataset))
-    eval_result["all_percent"] = np.zeros(len(coco_dataset))
-    eval_result["meta"] = []
-    eval_result["per_categ_jaccard"] = dict()
-
-    # Iterate
-    for i in range(len(coco_dataset)):
-        sample = coco_dataset.__getitem__(i)
-        if i % 1000 == 0:
-            print('Evaluating: {} of {} objects'.format(i, len(coco_dataset)))
-
-        obj_id = sample['meta']['object']
-        rle_mask = results[obj_id]['segmentation']
-        rle_gt = coco_dataset.coco.annToRLE(sample['segmentation'])
-        # HACK!
-        rle_gt["counts"] = str(rle_gt["counts"]).replace('b\'', '').replace('\'', '')
-
-        # Evaluate
-        eval_result["all_jaccards"][i] = mask_util.iou([rle_mask], [rle_gt], [0])[0][0]
-
-    return eval_result
-
-
 def eval_one_result(loader, folder, one_mask_per_image=False, mask_thres=0.5, use_void_pixels=True, custom_box=False):
     def mAPr(per_cat, thresholds):
         n_cat = len(per_cat)

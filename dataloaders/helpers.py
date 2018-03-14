@@ -152,7 +152,7 @@ def get_bbox(mask, points=None, pad=0, zero_pad=False):
 
 
 def crop_from_bbox(img, bbox, zero_pad=False):
-    # Borers of image
+    # Borders of image
     bounds = (0, 0, img.shape[1] - 1, img.shape[0] - 1)
 
     # Valid bounding box locations as (x_min, y_min, x_max, y_max)
@@ -188,7 +188,7 @@ def crop_from_bbox(img, bbox, zero_pad=False):
     return crop
 
 
-def fixed_resize(sample, resolution, flagval=None, scikit=False):
+def fixed_resize(sample, resolution, flagval=None):
 
     if flagval is None:
         if ((sample == 0) | (sample == 1)).all():
@@ -202,10 +202,7 @@ def fixed_resize(sample, resolution, flagval=None, scikit=False):
         resolution = tuple(tmp)
 
     if sample.ndim == 2 or (sample.ndim == 3 and sample.shape[2] == 3):
-        if scikit:
-            sample = sk_resize(sample, resolution,  order=0, mode='constant').astype(sample.dtype)
-        else:
-            sample = cv2.resize(sample, resolution[::-1], interpolation=flagval)
+        sample = cv2.resize(sample, resolution[::-1], interpolation=flagval)
     else:
         tmp = sample
         sample = np.zeros(np.append(resolution, tmp.shape[2]), dtype=np.float32)
@@ -280,7 +277,7 @@ def make_gt(img, labels, sigma=10, one_mask_per_point=False):
 
 def cstm_normalize(im, max_value):
     """
-    Normalize image
+    Normalize image to range 0 - max_value
     """
     imn = max_value*(im - im.min()) / max((im.max() - im.min()), 1e-8)
     return imn

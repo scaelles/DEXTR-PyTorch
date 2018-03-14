@@ -66,10 +66,9 @@ class FixedResize(object):
     Args:
         resolutions (dict): the list of resolutions
     """
-    def __init__(self, resolutions=None, flagvals=None, scikit=False):
+    def __init__(self, resolutions=None, flagvals=None):
         self.resolutions = resolutions
         self.flagvals = flagvals
-        self.scikit = scikit
         if self.flagvals is not None:
             assert(len(self.resolutions) == len(self.flagvals))
 
@@ -103,14 +102,14 @@ class FixedResize(object):
                     sample[elem] = np.zeros(output_size, dtype=np.float32)
                     for ii, crop in enumerate(tmp):
                         if self.flagvals is None:
-                            sample[elem][..., ii] = helpers.fixed_resize(crop, self.resolutions[elem], scikit=self.scikit)
+                            sample[elem][..., ii] = helpers.fixed_resize(crop, self.resolutions[elem])
                         else:
-                            sample[elem][..., ii] = helpers.fixed_resize(crop, self.resolutions[elem], flagval=self.flagvals[elem], scikit=self.scikit)
+                            sample[elem][..., ii] = helpers.fixed_resize(crop, self.resolutions[elem], flagval=self.flagvals[elem])
                 else:
                     if self.flagvals is None:
-                        sample[elem] = helpers.fixed_resize(sample[elem], self.resolutions[elem], scikit=self.scikit)
+                        sample[elem] = helpers.fixed_resize(sample[elem], self.resolutions[elem])
                     else:
-                        sample[elem] = helpers.fixed_resize(sample[elem], self.resolutions[elem], flagval=self.flagvals[elem], scikit=self.scikit)
+                        sample[elem] = helpers.fixed_resize(sample[elem], self.resolutions[elem], flagval=self.flagvals[elem])
             else:
                 del sample[elem]
 
