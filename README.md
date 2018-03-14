@@ -5,8 +5,13 @@ Visit our [project page](http://www.vision.ee.ethz.ch/~cvlsegmentation) for acce
 
 This is the implementation of our work `Deep Extreme Cut (DEXTR)`, for object segmentation from extreme points.
 
+### Abstract
+This paper explores the use of extreme points in an object (left-most, right-most, top, bottom pixels) as input to obtain precise object segmentation for images and videos. We do so by adding an extra channel to the image in the input of a convolutional neural network (CNN), which contains a Gaussian centered in each of the extreme points. The CNN learns to transform this information into a segmentation of an object that matches those extreme points. We demonstrate the usefulness of this approach for guided segmentation (grabcut-style), interactive segmentation, video object segmentation, and dense segmentation annotation. We show that we obtain the most precise results to date, also with less user input, in an extensive and varied selection of benchmarks and datasets. All our models and code will be made publicly available. 
+
 ### Installation
 The code was tested with Miniconda and Python 3.6. After installing the Miniconda environment:
+
+
 0. Clone the repo:
   ```Shell
   git clone https://github.com/scaelles/DEXTR-PyTorch
@@ -62,4 +67,4 @@ If you use this code, please consider citing the following paper:
 
 We thank the authors of [pytorch-deeplab-resnet](https://github.com/isht7/pytorch-deeplab-resnet) for making their PyTorch re-implementation of DeepLab-v2 available!
 
-If you encounter any problem or/and you have any suggestions please contact us at {kmaninis, scaelles}@vision.ee.ethz.ch
+If you encounter any problems please contact us at {kmaninis, scaelles}@vision.ee.ethz.ch.
