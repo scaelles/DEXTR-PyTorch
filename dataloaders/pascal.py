@@ -4,13 +4,13 @@ import hashlib
 import os
 import sys
 import tarfile
-from mypath import Path
 import numpy as np
 
 import torch.utils.data as data
 from PIL import Image
 from six.moves import urllib
 import json
+from mypath import Path
 
 
 class VOCSegmentation(data.Dataset):
@@ -29,7 +29,6 @@ class VOCSegmentation(data.Dataset):
     def __init__(self,
                  root=Path.db_root_dir('pascal'),
                  split='val',
-                 subsplit=None,
                  transform=None,
                  download=False,
                  preprocess=False,
@@ -93,19 +92,12 @@ class VOCSegmentation(data.Dataset):
                 self.categories.append(_cat)
                 self.masks.append(_mask)
 
-        # Uncomment to overfit to one image
-
-        # self.images = self.images[:5]
-        # self.masks = self.masks[:5]
-        # self.categories = self.categories[:5]
-        # self.im_ids = self.im_ids[:5]
-
         assert (len(self.images) == len(self.masks))
         assert (len(self.images) == len(self.categories))
 
         # Precompute the list of objects and their categories for each image 
         if (not self._check_preprocess()) or preprocess:
-            print('Preprocessing the dataset, this will take long, but it will be done only once.')
+            print('Preprocessing of PASCAL VOC dataset, this will take long, but it will be done only once.')
             self._preprocess()
             
         # Build the list of objects
@@ -133,8 +125,7 @@ class VOCSegmentation(data.Dataset):
             sample['meta'] = {'image': str(self.im_ids[_im_ii]),
                               'object': str(_obj_ii),
                               'category': self.obj_dict[self.im_ids[_im_ii]][_obj_ii],
-                              'im_size': (_img.shape[0], _img.shape[1]),
-                              'all_categories': self.obj_dict[self.im_ids[_im_ii]]}
+                              'im_size': (_img.shape[0], _img.shape[1])}
 
         if self.transform is not None:
             sample = self.transform(sample)
@@ -277,7 +268,6 @@ if __name__ == '__main__':
     import torch
     import dataloaders.custom_transforms as tr
     from torchvision import transforms
-    import numpy as np
 
     transform = transforms.Compose([tr.ToTensor()])
 
