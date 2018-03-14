@@ -1,7 +1,6 @@
 import socket
 import timeit
 from datetime import datetime
-
 import scipy.misc as sm
 from collections import OrderedDict
 import glob
@@ -17,14 +16,18 @@ from torch.nn.functional import upsample
 from tensorboardX import SummaryWriter
 
 # Custom includes
-from dataloaders.pascal import VOCSegmentation as db
+# from dataloaders.pascal import VOCSegmentation as db
+from dataloaders.combine_dbs import CombineDBs as combine_dbs
+import dataloaders.pascal as pascal
+import dataloaders.sbd as sbd
 from dataloaders import custom_transforms as tr
 import networks.deeplab_resnet as resnet
 from layers.loss import class_balanced_cross_entropy_loss
 from dataloaders.helpers import *
 
 # Set gpu_id to -1 to run in CPU mode, otherwise set the id of the corresponding gpu
-gpu_id = 3
+gpu_id = 0
+use_sbd = False
 print('Using GPU: {} '.format(gpu_id))
 
 # Setting parameters
@@ -32,7 +35,6 @@ nEpochs = 100  # Number of epochs for training
 resume_epoch = 0  # Default is 0, change if want to resume
 
 p = OrderedDict()  # Parameters to include in report
-p['initialModel'] = 'voc'  # Weights to initialize the model
 classifier = 'psp'  # Head classifier to use
 p['trainBatch'] = 5  # Training batch size
 testBatch = 5  # Testing batch size
@@ -40,7 +42,7 @@ useTest = 1  # See evolution of the test set when training?
 nTestInterval = 10  # Run on test set every nTestInterval epochs
 snapshot = 20  # Store a model every snapshot epochs
 relax_crop = 50  # Enlarge the bounding box by relax_crop pixels
-nInputChannels = 4  # Number of input channels (RGB+Heatmap extreme points)
+nInputChannels = 4  # Number of input channels (RGB + heatmap of extreme points)
 zero_pad_crop = True  # Insert zero padding when cropping the image
 p['nAveGrad'] = 1  # Average the gradient of several iterations
 p['lr'] = 1e-8  # Learning rate
@@ -61,9 +63,9 @@ if not os.path.exists(os.path.join(save_dir, 'models')):
 
 # Network definition
 modelName = 'dextr_pascal'
-net = resnet.resnet101(1, pretrained=p['initialModel'], nInputChannels=nInputChannels, classifier=classifier)
+net = resnet.resnet101(1, pretrained=True, nInputChannels=nInputChannels, classifier=classifier)
 if resume_epoch == 0:
-    print("Initializing from {} pretrained model".format(p['initialModel']))
+    print("Initializing from pretrained Deeplab-v2 model")
 else:
     print("Initializing weights from: {}".format(
         os.path.join(save_dir, 'models', modelName + '_epoch-' + str(resume_epoch - 1) + '.pth')))
@@ -87,7 +89,6 @@ if resume_epoch != nEpochs:
     p['optimizer'] = str(optimizer)
 
     # Preparation of the data loaders
-    # Training dataset and its iterator
     composed_transforms_tr = transforms.Compose([
         tr.RandomHorizontalFlip(),
         tr.ScaleNRotate(rots=(-20, 20), scales=(.75, 1.25)),
@@ -97,14 +98,6 @@ if resume_epoch != nEpochs:
         tr.ToImage(norm_elem='extreme_points'),
         tr.ConcatInputs(elems=('crop_image', 'extreme_points')),
         tr.ToTensor()])
-
-    p['transformations_train'] = [str(tran) for tran in composed_transforms_tr.transforms]
-    db_train = db(split='train', transform=composed_transforms_tr)
-
-    p['dataset_train'] = str(db_train)
-    trainloader = DataLoader(db_train, batch_size=p['trainBatch'], shuffle=True, num_workers=2)
-
-    # Testing dataset and its iterator
     composed_transforms_ts = transforms.Compose([
         tr.CropFromMask(crop_elems=('image', 'gt'), relax=relax_crop, zero_pad=zero_pad_crop),
         tr.FixedResize(resolutions={'crop_image': (512, 512), 'crop_gt': (512, 512)}),
@@ -113,10 +106,22 @@ if resume_epoch != nEpochs:
         tr.ConcatInputs(elems=('crop_image', 'extreme_points')),
         tr.ToTensor()])
 
-    p['transformations_test'] = [str(tran) for tran in composed_transforms_ts.transforms]
-    db_test = db(split='val', transform=composed_transforms_ts)
+    voc_train = pascal.VOCSegmentation(split='train', transform=composed_transforms_tr)
+    voc_val = pascal.VOCSegmentation(split='val', transform=composed_transforms_ts)
+
+    if use_sbd:
+        sbd = sbd.SBDSegmentation(split=['train', 'val'], transform=composed_transforms_tr, retname=True)
+        db_train = combine_dbs([voc_train, sbd], excluded=[voc_val])
+    else:
+        db_train = voc_train
+
+    p['dataset_train'] = str(db_train)
+    p['transformations_train'] = [str(tran) for tran in composed_transforms_tr.transforms]
     p['dataset_test'] = str(db_train)
-    testloader = DataLoader(db_test, batch_size=testBatch, shuffle=False, num_workers=2)
+    p['transformations_test'] = [str(tran) for tran in composed_transforms_ts.transforms]
+
+    trainloader = DataLoader(db_train, batch_size=p['trainBatch'], shuffle=True, num_workers=2)
+    testloader = DataLoader(voc_val, batch_size=testBatch, shuffle=False, num_workers=2)
 
     generate_param_report(os.path.join(save_dir, exp_name + '.txt'), p)
 
@@ -211,7 +216,7 @@ composed_transforms_ts = transforms.Compose([
     tr.ToImage(norm_elem='extreme_points'),
     tr.ConcatInputs(elems=('crop_image', 'extreme_points')),
     tr.ToTensor()])
-db_test = db(split='val', transform=composed_transforms_ts, retname=True)
+db_test = pascal.VOCSegmentation(split='val', transform=composed_transforms_ts, retname=True)
 testloader = DataLoader(db_test, batch_size=1, shuffle=False, num_workers=1)
 
 save_dir_res = os.path.join(save_dir, 'Results')

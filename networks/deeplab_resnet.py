@@ -291,13 +291,10 @@ class MS_Deeplab(nn.Module):
         return out[-1]
 
 
-def Res_Deeplab(n_classes=21, pretrained=None):
+def Res_Deeplab(n_classes=21, pretrained=False):
     model = MS_Deeplab(Bottleneck, n_classes)
-    if pretrained is not None:
-        if pretrained == 'voc':
-            pth_model = 'MS_DeepLab_resnet_trained_VOC.pth'
-        elif pretrained == 'ms_coco':
-            pth_model = 'MS_DeepLab_resnet_pretrained_COCO_init.pth'
+    if pretrained:
+        pth_model = 'MS_DeepLab_resnet_trained_VOC.pth'
         saved_state_dict = torch.load(os.path.join(Path.models_dir(), pth_model),
                                       map_location=lambda storage, loc: storage)
         if n_classes != 21:
