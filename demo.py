@@ -1,10 +1,5 @@
-# ToDo Remove before release
-from PyQt5 import QtCore, QtGui, QtWidgets
-
 import os
-
-import torch, cv2
-
+import torch
 from PIL import Image
 import numpy as np
 from matplotlib import pyplot as plt
@@ -18,26 +13,26 @@ from mypath import Path
 from dataloaders import helpers as helpers
 
 modelName = 'dextr_pascal-sbd'
-epoch = 100
 pad = 50
-thres = 0.9
-
-#  Read image and click the points
-image = np.array(Image.open('demo.jpg'))
-plt.figure()
-plt.imshow(image)
-plt.title('Click the four extreme points')
-extreme_points_ori = np.array(plt.ginput(4)).astype(np.int)
-plt.close()
+thres = 0.8
+gpu_id = 1
 
 #  Create the network and load the weights
 net = resnet.resnet101(1, nInputChannels=4, classifier='psp')
-print("Initializing weights from: {}".format(
-    os.path.join(Path.models_dir(), modelName + '_epoch-' + str(epoch - 1) + '.pth')))
-net.load_state_dict(
-    torch.load(os.path.join(Path.models_dir(), modelName + '_epoch-' + str(epoch - 1) + '.pth'),
-               map_location=lambda storage, loc: storage))
+print("Initializing weights from: {}".format(os.path.join(Path.models_dir(), modelName + '.pth')))
+net.load_state_dict(torch.load(os.path.join(Path.models_dir(), modelName + '.pth'),
+                               map_location=lambda storage, loc: storage))
 net.eval()
+if gpu_id >= 0:
+    torch.cuda.set_device(device=gpu_id)
+    net.cuda()
+
+#  Read image and click the points
+image = np.array(Image.open('ims/dog-cat.jpg'))
+plt.ion()
+plt.imshow(image)
+plt.title('Click the four extreme points')
+extreme_points_ori = np.array(plt.ginput(4)).astype(np.int)
 
 #  Crop image to the bounding box from the extreme points and resize
 bbox = helpers.get_bbox(image, points=extreme_points_ori, pad=pad, zero_pad=True)
@@ -54,14 +49,23 @@ extreme_heatmap = helpers.cstm_normalize(extreme_heatmap, 255)
 input_dextr = np.concatenate((resize_image, extreme_heatmap[:, :, np.newaxis]), axis=2)
 input_dextr = torch.from_numpy(input_dextr.transpose((2, 0, 1))[np.newaxis, ...])
 
+# Run a forward pass
 inputs = Variable(input_dextr, volatile=True)
+if gpu_id >= 0:
+    inputs = inputs.cuda()
+
 outputs = net.forward(inputs)
 outputs = upsample(outputs, size=(512, 512), mode='bilinear')
+if gpu_id >= 0:
+    outputs = outputs.cpu()
+
 pred = np.transpose(outputs.data.numpy()[0, ...], (1, 2, 0))
 pred = 1 / (1 + np.exp(-pred))
 pred = np.squeeze(pred)
 result = helpers.crop2fullmask(pred, bbox, im_size=image.shape[:2], zero_pad=True, relax=pad) > thres
 
+# Plot the results
 plt.imshow(helpers.overlay_mask(image/255, result))
 plt.plot(extreme_points_ori[:, 0], extreme_points_ori[:, 1], 'gx')
+plt.ioff()
 plt.show()
