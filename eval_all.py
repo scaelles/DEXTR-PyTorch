@@ -28,7 +28,7 @@ if __name__ == '__main__':
                 val = float(f.read())
         else:
             print("Evaluating method: {}".format(method))
-            jaccards = eval_one_result(dataloader, results_folder, mask_thres=0.85)
+            jaccards = eval_one_result(dataloader, results_folder, mask_thres=0.8)
             val = jaccards["all_jaccards"].mean()
 
         # Show mean and store result
