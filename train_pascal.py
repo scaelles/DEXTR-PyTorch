@@ -30,7 +30,7 @@ use_sbd = False
 print('Using GPU: {} '.format(gpu_id))
 
 # Setting parameters
-nEpochs = 0  # Number of epochs for training
+nEpochs = 100  # Number of epochs for training
 resume_epoch = 0  # Default is 0, change if want to resume
 
 p = OrderedDict()  # Parameters to include in report

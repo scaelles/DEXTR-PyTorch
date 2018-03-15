@@ -196,27 +196,6 @@ class ResNet(nn.Module):
             x = self.layer5(x)
         return x
 
-    def load_pretrained(self, base_network, nInputChannels=3):
-        flag = 0
-        for module, module_ori in zip(self.modules(), base_network.modules()):
-            if isinstance(module, nn.Conv2d) and isinstance(module_ori, nn.Conv2d):
-                if not flag and nInputChannels != 3:
-                    module.weight[:, :3, :, :].data = deepcopy(module_ori.weight.data)
-                    module.bias = deepcopy(module_ori.bias)
-                    for i in range(3, int(module.weight.data.shape[1])):
-                        module.weight[:, i, :, :].data = deepcopy(module_ori.weight[:, -1, :, :][:, np.newaxis, :, :].data)
-                    flag = 1
-                elif module.weight.data.shape == module_ori.weight.data.shape:
-                    module.weight = deepcopy(module_ori.weight)
-                    module.bias = deepcopy(module_ori.bias)
-                else:
-                    print('Skipping Conv layer with size: {} and target size: {}'
-                          .format(module.weight.data.shape, module_ori.weight.data.shape))
-            elif isinstance(module, nn.BatchNorm2d) and isinstance(module_ori, nn.BatchNorm2d) \
-                         and module.weight.data.shape == module_ori.weight.data.shape:
-                module.weight.data = deepcopy(module_ori.weight.data)
-                module.bias.data = deepcopy(module_ori.bias.data)
-
     def load_pretrained_ms(self, base_network, nInputChannels=3):
         flag = 0
         for module, module_ori in zip(self.modules(), base_network.Scale.modules()):
@@ -239,17 +218,13 @@ class ResNet(nn.Module):
                 module.bias.data = deepcopy(module_ori.bias.data)
 
 
-def resnet101(n_classes, pretrained=True, nInputChannels=3, classifier="atrous",
+def resnet101(n_classes, pretrained=False, nInputChannels=3, classifier="atrous",
               dilations=(2, 4), strides=(2, 2, 2, 1, 1)):
     """Constructs a ResNet-101 model.
     """
     model = ResNet(Bottleneck, [3, 4, 23, 3], n_classes, nInputChannels=nInputChannels,
                    classifier=classifier, dilations=dilations, strides=strides, _print=True)
-    if not pretrained:
-        print('Initializing from pre-trained ImageNet model..')
-        model_full = resnet.resnet101(pretrained=True)
-        model.load_pretrained(model_full, nInputChannels=nInputChannels)
-    else:
+    if pretrained:
         model_full = Res_Deeplab(n_classes, pretrained=pretrained)
         model.load_pretrained_ms(model_full, nInputChannels=nInputChannels)
     return model
