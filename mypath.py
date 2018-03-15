@@ -3,13 +3,14 @@ class Path(object):
     @staticmethod
     def db_root_dir(database):
         if database == 'pascal':
-            return '/media/eec/external/Databases/Segmentation/PASCAL/'
+            return '/path/to/PASCAL/VOC2012'  # folder with JPEGImages/, Annotations/, etc.
+
         elif database == 'sbd':
-            return '/media/eec/external/Databases/Segmentation/PASCAL/'
+            return '/path/to/SBD/'  # folder with img/, inst/, cls/, etc.
         else:
             print('Database {} not available.'.format(database))
             raise NotImplementedError
 
     @staticmethod
     def models_dir():
-        return 'models'
+        return 'models/'

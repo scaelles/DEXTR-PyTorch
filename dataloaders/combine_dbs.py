@@ -1,17 +1,10 @@
-import sys
-from cvlseg.util.mypath import Path
-
-if Path.is_custom_pytorch():
-    sys.path.insert(0, Path.custom_pytorch())
 import torch.utils.data as data
 
 
 class CombineDBs(data.Dataset):
-    def __init__(self, dataloaders, excluded=None, n_objects=None, semseg=False):
+    def __init__(self, dataloaders, excluded=None):
         self.dataloaders = dataloaders
         self.excluded = excluded
-        self.semseg = semseg
-
         self.im_ids = []
 
         # Combine object lists
@@ -46,23 +39,14 @@ class CombineDBs(data.Dataset):
                     self.im_list.append({'db_ii': ii, 'im_ii': jj})
                     if flag:
                         num_images += 1
-                if n_objects is not None and obj_counter >= n_objects:
-                    break
-            else:  # Python way of breaking nested loops ^.^
-                continue
-            break
 
         self.im_ids = new_im_ids
         print('Combined number of images: {:d}\nCombined number of objects: {:d}'.format(num_images, len(self.obj_list)))
 
     def __getitem__(self, index):
 
-        if not self.semseg:
-            _db_ii = self.obj_list[index]["db_ii"]
-            _obj_ii = self.obj_list[index]['obj_ii']
-        else:
-            _db_ii = self.im_list[index]["db_ii"]
-            _obj_ii = self.im_list[index]['im_ii']
+        _db_ii = self.obj_list[index]["db_ii"]
+        _obj_ii = self.obj_list[index]['obj_ii']
         sample = self.dataloaders[_db_ii].__getitem__(_obj_ii)
 
         if 'meta' in sample.keys():
@@ -71,10 +55,7 @@ class CombineDBs(data.Dataset):
         return sample
 
     def __len__(self):
-        if self.semseg:
-            return len(self.im_ids)
-        else:
-            return len(self.obj_list)
+        return len(self.obj_list)
 
     def __str__(self):
         include_db = [str(db) for db in self.dataloaders]
@@ -84,12 +65,12 @@ class CombineDBs(data.Dataset):
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    import cvlseg.util.helpers as helpers
-    import cvlseg.dataloaders.pascal as pascal
-    import cvlseg.dataloaders.sbd as sbd
+    import dataloaders.helpers as helpers
+    import dataloaders.pascal as pascal
+    import dataloaders.sbd as sbd
     import torch
     import numpy as np
-    import cvlseg.dataloaders.custom_transforms as tr
+    import dataloaders.custom_transforms as tr
     from torchvision import transforms
 
     transform = transforms.Compose([tr.FixedResize({'image': (512, 512), 'gt': (512, 512)}),

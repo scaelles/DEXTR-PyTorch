@@ -239,29 +239,17 @@ class ResNet(nn.Module):
                 module.bias.data = deepcopy(module_ori.bias.data)
 
 
-def resnet50(n_classes, pretrained=None, nInputChannels=3, classifier="atrous",
-             dilations=(2, 4), strides=(2, 2, 2, 1, 1)):
-    """Constructs a ResNet-50 model.
-    """
-    model = ResNet(Bottleneck, [3, 4, 6, 3], n_classes, nInputChannels=nInputChannels,
-                   classifier=classifier, dilations=dilations, strides=strides)
-    if pretrained:
-        model_full = resnet.resnet50(pretrained=True)
-        model.load_pretrained(model_full, nInputChannels=nInputChannels)
-    return model
-
-
-def resnet101(n_classes, pretrained=None, nInputChannels=3, classifier="atrous",
+def resnet101(n_classes, pretrained=True, nInputChannels=3, classifier="atrous",
               dilations=(2, 4), strides=(2, 2, 2, 1, 1)):
     """Constructs a ResNet-101 model.
     """
     model = ResNet(Bottleneck, [3, 4, 23, 3], n_classes, nInputChannels=nInputChannels,
                    classifier=classifier, dilations=dilations, strides=strides, _print=True)
-    if pretrained == 'imagenet':
+    if not pretrained:
         print('Initializing from pre-trained ImageNet model..')
         model_full = resnet.resnet101(pretrained=True)
         model.load_pretrained(model_full, nInputChannels=nInputChannels)
-    elif pretrained == 'ms_coco' or pretrained == 'voc':
+    else:
         model_full = Res_Deeplab(n_classes, pretrained=pretrained)
         model.load_pretrained_ms(model_full, nInputChannels=nInputChannels)
     return model

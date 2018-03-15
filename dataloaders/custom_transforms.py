@@ -242,32 +242,6 @@ class CropFromMask(object):
                ', relax='+str(self.relax)+',zero_pad='+str(self.zero_pad)+')'
 
 
-class CropFromExtremePoints(object):
-    def __init__(self, crop_elems=('image', 'gt'),
-                 relax=0,
-                 zero_pad=False):
-        self.crop_elems = crop_elems
-        self.relax = relax
-        self.zero_pad = zero_pad
-
-    def __call__(self, sample):
-        for elem in self.crop_elems:
-            if 'extreme_points_coord' in elem:
-                x_min, y_min, _, _ = helpers.get_bbox(sample['gt'], points=sample[elem],
-                                                      pad=self.relax, zero_pad=self.zero_pad)
-                sample['crop_' + elem] = sample[elem] - np.array([x_min, y_min])
-                continue
-            bbox = helpers.get_bbox(sample[elem], points=sample['extreme_points_coord'], pad=self.relax,
-                                    zero_pad=self.zero_pad)
-            if bbox is None:
-                crop = np.zeros(sample[elem].shape, dtype=sample[elem].dtype)
-            else:
-                crop = helpers.crop_from_bbox(sample[elem], bbox, self.zero_pad)
-            sample['crop_' + elem] = crop
-
-        return sample
-
-
 class ToImage(object):
     """
     Return the given elements between 0 and 255

@@ -16,7 +16,6 @@ from torch.nn.functional import upsample
 from tensorboardX import SummaryWriter
 
 # Custom includes
-# from dataloaders.pascal import VOCSegmentation as db
 from dataloaders.combine_dbs import CombineDBs as combine_dbs
 import dataloaders.pascal as pascal
 import dataloaders.sbd as sbd
@@ -31,7 +30,7 @@ use_sbd = False
 print('Using GPU: {} '.format(gpu_id))
 
 # Setting parameters
-nEpochs = 100  # Number of epochs for training
+nEpochs = 0  # Number of epochs for training
 resume_epoch = 0  # Default is 0, change if want to resume
 
 p = OrderedDict()  # Parameters to include in report
