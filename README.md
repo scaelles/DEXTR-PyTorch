@@ -1,5 +1,5 @@
 # Deep Extreme Cut (DEXTR)
-Visit our [project page](http://www.vision.ee.ethz.ch/~cvlsegmentation) for accessing the paper, and the pre-computed results.
+Visit our [project page](http://www.vision.ee.ethz.ch/~cvlsegmentation/dextr) for accessing the paper, and the pre-computed results.
 
 ![DEXTR](doc/dextr.png)
 
