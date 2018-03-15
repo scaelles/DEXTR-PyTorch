@@ -21,14 +21,14 @@ The code was tested with [Miniconda](https://conda.io/miniconda.html) and Python
 1. Install dependencies:
   ```Shell
   conda install pytorch torchvision -c pytorch
-  conda install matplotlib opencv-python pillow pillow scikit-learn scikit-image
+  conda install matplotlib opencv pillow pillow scikit-learn scikit-image
   ```
   
 2. Download the models by running the script inside ```models/```:
   ```Shell
   cd models/
-  chmod +x download_dextr_models.sh
-  ./download_dextr_models.sh
+  chmod +x download_dextr_model.sh
+  ./download_dextr_model.sh
   cd ..
   ```
 
@@ -48,12 +48,12 @@ To train and evaluate DEXTR on PASCAL (or PASCAL + SBD), please follow these add
   ```Shell
   cd models/
   chmod +x download_pretrained_psp_model.sh
-  ./download_pretrained_psp_models.sh
+  ./download_pretrained_psp_model.sh
   cd ..
   ```
 6. Set the paths in ```mypath.py```, so that they point to the location of PASCAL/SBD dataset.
 
-7. Run ```train_pascal.py```, after changing the default parameters, if necessary (eg. gpu_id).
+7. Run ```python train_pascal.py```, after changing the default parameters, if necessary (eg. gpu_id).
 
 Enjoy!!
 
