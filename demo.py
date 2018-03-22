@@ -30,9 +30,10 @@ if gpu_id >= 0:
 #  Read image and click the points
 image = np.array(Image.open('ims/dog-cat.jpg'))
 plt.ion()
+plt.axis('off')
 plt.imshow(image)
 plt.title('Click the four extreme points')
-extreme_points_ori = np.array(plt.ginput(4)).astype(np.int)
+extreme_points_ori = np.array(plt.ginput(4, timeout=0)).astype(np.int)
 
 #  Crop image to the bounding box from the extreme points and resize
 bbox = helpers.get_bbox(image, points=extreme_points_ori, pad=pad, zero_pad=True)
