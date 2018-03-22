@@ -36,6 +36,8 @@ The code was tested with [Miniconda](https://conda.io/miniconda.html) and Python
   ```Shell
   python demo.py
   ```
+If installed correctly, the result should look like this:
+<p align="center"><img src="https://data.vision.ee.ethz.ch/kmaninis/share/DEXTR/result_dexter.gif" align="center" width=480 height=auto/></p>
 
 To train and evaluate DEXTR on PASCAL (or PASCAL + SBD), please follow these additional steps:
 
