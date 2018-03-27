@@ -67,7 +67,7 @@ We provide the following DEXTR models, pre-trained on:
   * [COCO](https://data.vision.ee.ethz.ch/kmaninis/share/DEXTR/Downloads/models/dextr_coco.pth), trained on COCO train 2014 (82783 images).
 
 ### Citation
-If you use this code, please consider citing the following paper:
+If you use this code, please consider citing the following papers:
 
 	@Inproceedings{Man+18,
 	  Title          = {Deep Extreme Cut: From Extreme Points to Object Segmentation},
@@ -75,6 +75,14 @@ If you use this code, please consider citing the following paper:
 	  Booktitle      = {Computer Vision and Pattern Recognition (CVPR)},
 	  Year           = {2018}
 	}
+
+	@InProceedings{Pap+17,
+	  Title          = {Extreme clicking for efficient object annotation},
+	  Author         = {D.P. Papadopoulos and J. Uijlings and F. Keller and V. Ferrari},
+	  Booktitle      = {ICCV},
+	  Year           = {2017}
+	}
+
 
 We thank the authors of [pytorch-deeplab-resnet](https://github.com/isht7/pytorch-deeplab-resnet) for making their PyTorch re-implementation of DeepLab-v2 available!
 
