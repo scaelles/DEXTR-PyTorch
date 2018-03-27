@@ -31,7 +31,7 @@ The code was tested with [Miniconda](https://conda.io/miniconda.html) and Python
   ./download_dextr_model.sh
   cd ..
   ```
-  The default model is trained on PASCAL VOC Segmentation train + SBD (10582 images). To download models trained on PASCAL VOC Segmentation train or COCO, please visit our [project page](http://www.vision.ee.ethz.ch/~cvlsegmentation/dextr/#downloads), or keep scrolling.
+  The default model is trained on PASCAL VOC Segmentation train + SBD (10582 images). To download models trained on PASCAL VOC Segmentation train or COCO, please visit our [project page](http://www.vision.ee.ethz.ch/~cvlsegmentation/dextr/#downloads), or keep scrolling till the end of this README.
 
 3. To try the demo version of DEXTR, please run:
   ```Shell
