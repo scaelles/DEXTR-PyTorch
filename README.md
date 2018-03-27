@@ -24,13 +24,14 @@ The code was tested with [Miniconda](https://conda.io/miniconda.html) and Python
   conda install matplotlib opencv pillow pillow scikit-learn scikit-image
   ```
   
-2. Download the models by running the script inside ```models/```:
+2. Download the model by running the script inside ```models/```:
   ```Shell
   cd models/
   chmod +x download_dextr_model.sh
   ./download_dextr_model.sh
   cd ..
   ```
+  The default model is trained on PASCAL VOC Segmentation train + SBD (10582 images). To download models trained on PASCAL VOC Segmentation train or COCO, please visit our [project page](http://www.vision.ee.ethz.ch/~cvlsegmentation/dextr/#downloads), or keep scrolling.
 
 3. To try the demo version of DEXTR, please run:
   ```Shell
@@ -59,6 +60,11 @@ To train and evaluate DEXTR on PASCAL (or PASCAL + SBD), please follow these add
 
 Enjoy!!
 
+### Pre-trained models
+We provide the following DEXTR models, pre-trained on:
+  * [PASCAL](https://data.vision.ee.ethz.ch/kmaninis/share/DEXTR/Downloads/models/dextr_pascal.pth), trained on PASCAL VOC Segmentation train (1464 images).
+  * [PASCAL + SBD](https://data.vision.ee.ethz.ch/kmaninis/share/DEXTR/Downloads/models/dextr_pascal-sbd.pth), trained on PASCAL VOC Segmentation train + SBD (10582 images).
+  * [COCO](https://data.vision.ee.ethz.ch/kmaninis/share/DEXTR/Downloads/models/dextr_coco.pth), trained on COCO train 2014 (82783 images).
 
 ### Citation
 If you use this code, please consider citing the following paper:
