@@ -21,7 +21,7 @@ The code was tested with [Miniconda](https://conda.io/miniconda.html) and Python
 1. Install dependencies:
   ```Shell
   conda install pytorch torchvision -c pytorch
-  conda install matplotlib opencv pillow pillow scikit-learn scikit-image
+  conda install matplotlib opencv pillow scikit-learn scikit-image
   ```
   
 2. Download the model by running the script inside ```models/```:
