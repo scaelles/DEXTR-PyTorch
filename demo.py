@@ -1,5 +1,6 @@
 import os
 import torch
+from collections import OrderedDict
 from PIL import Image
 import numpy as np
 from matplotlib import pyplot as plt
@@ -19,8 +20,17 @@ gpu_id = 0
 #  Create the network and load the weights
 net = resnet.resnet101(1, nInputChannels=4, classifier='psp')
 print("Initializing weights from: {}".format(os.path.join(Path.models_dir(), modelName + '.pth')))
-net.load_state_dict(torch.load(os.path.join(Path.models_dir(), modelName + '.pth'),
-                               map_location=lambda storage, loc: storage))
+state_dict_checkpoint = torch.load(os.path.join(Path.models_dir(), modelName + '.pth'),
+                                   map_location=lambda storage, loc: storage)
+# Remove the prefix .module from the model when it is trained using DataParallel
+if 'module.' in list(state_dict_checkpoint.keys())[0]:
+    new_state_dict = OrderedDict()
+    for k, v in state_dict_checkpoint.items():
+        name = k[7:]  # remove `module.` from multi-gpu training
+        new_state_dict[name] = v
+else:
+    new_state_dict = state_dict_checkpoint
+net.load_state_dict(new_state_dict)
 net.eval()
 if gpu_id >= 0:
     torch.cuda.set_device(device=gpu_id)
