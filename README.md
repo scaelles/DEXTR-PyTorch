@@ -13,47 +13,47 @@ The code was tested with [Miniconda](https://conda.io/miniconda.html) and Python
 
 
 0. Clone the repo:
-  ```Shell
-  git clone https://github.com/scaelles/DEXTR-PyTorch
-  cd DEXTR-PyTorch
-  ```
+    ```Shell
+    git clone https://github.com/scaelles/DEXTR-PyTorch
+    cd DEXTR-PyTorch
+    ```
  
 1. Install dependencies:
-  ```Shell
-  conda install pytorch torchvision -c pytorch
-  conda install matplotlib opencv pillow scikit-learn scikit-image
-  ```
+    ```Shell
+    conda install pytorch torchvision -c pytorch
+    conda install matplotlib opencv pillow scikit-learn scikit-image
+    ```
   
 2. Download the model by running the script inside ```models/```:
-  ```Shell
-  cd models/
-  chmod +x download_dextr_model.sh
-  ./download_dextr_model.sh
-  cd ..
-  ```
-  The default model is trained on PASCAL VOC Segmentation train + SBD (10582 images). To download models trained on PASCAL VOC Segmentation train or COCO, please visit our [project page](http://www.vision.ee.ethz.ch/~cvlsegmentation/dextr/#downloads), or keep scrolling till the end of this README.
+    ```Shell
+    cd models/
+    chmod +x download_dextr_model.sh
+    ./download_dextr_model.sh
+    cd ..
+    ```
+    The default model is trained on PASCAL VOC Segmentation train + SBD (10582 images). To download models trained on PASCAL VOC Segmentation train or COCO, please visit our [project page](http://www.vision.ee.ethz.ch/~cvlsegmentation/dextr/#downloads), or keep scrolling till the end of this README.
 
 3. To try the demo version of DEXTR, please run:
-  ```Shell
-  python demo.py
-  ```
+    ```Shell
+    python demo.py
+    ```
 If installed correctly, the result should look like this:
 <p align="center"><img src="doc/github_teaser.gif" align="center" width=480 height=auto/></p>
 
 To train and evaluate DEXTR on PASCAL (or PASCAL + SBD), please follow these additional steps:
 
 4. Install tensorboard (integrated with PyTorch). 
-  ```Shell
-  pip install tensorboard tensorboardx
-  ```
+    ```Shell
+    pip install tensorboard tensorboardx
+    ```
 
 5. Download the pre-trained PSPNet model for semantic segmentation, taken from [this](https://github.com/isht7/pytorch-deeplab-resnet) repository.
-  ```Shell
-  cd models/
-  chmod +x download_pretrained_psp_model.sh
-  ./download_pretrained_psp_model.sh
-  cd ..
-  ```
+    ```Shell
+    cd models/
+    chmod +x download_pretrained_psp_model.sh
+    ./download_pretrained_psp_model.sh
+    cd ..
+    ```
 6. Set the paths in ```mypath.py```, so that they point to the location of PASCAL/SBD dataset.
 
 7. Run ```python train_pascal.py```, after changing the default parameters, if necessary (eg. gpu_id).
