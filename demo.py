@@ -16,6 +16,8 @@ modelName = 'dextr_pascal-sbd'
 pad = 50
 thres = 0.8
 gpu_id = 0
+if not torch.cuda.is_available():
+    gpu_id = -1
 
 #  Create the network and load the weights
 net = resnet.resnet101(1, nInputChannels=4, classifier='psp')
