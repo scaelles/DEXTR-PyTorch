@@ -5,6 +5,7 @@ Visit our [project page](http://www.vision.ee.ethz.ch/~cvlsegmentation/dextr) fo
 
 This is the implementation of our work `Deep Extreme Cut (DEXTR)`, for object segmentation from extreme points.
 
+#### This code was ported to PyTorch 0.4.0!
 #### NEW: Keras with Tensorflow backend implementation also available: [DEXTR-KerasTensorflow](https://github.com/scaelles/DEXTR-KerasTensorflow )!
 
 ### Abstract
@@ -22,7 +23,7 @@ The code was tested with [Miniconda](https://conda.io/miniconda.html) and Python
  
 1. Install dependencies:
     ```Shell
-    conda install pytorch=0.3.1 torchvision -c pytorch
+    conda install pytorch torchvision -c pytorch
     conda install matplotlib opencv pillow scikit-learn scikit-image
     ```
   

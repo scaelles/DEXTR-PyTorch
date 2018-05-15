@@ -115,7 +115,7 @@ class PSPModule(nn.Module):
 
     def forward(self, feats):
         h, w = feats.size(2), feats.size(3)
-        priors = [F.upsample(input=stage(feats), size=(h, w), mode='bilinear') for stage in self.stages]
+        priors = [F.upsample(input=stage(feats), size=(h, w), mode='bilinear', align_corners=True) for stage in self.stages]
         priors.append(feats)
         bottle = self.relu(self.bottleneck(torch.cat(priors, 1)))
         out = self.final(bottle)
@@ -207,7 +207,7 @@ class ResNet(nn.Module):
                         module.weight[:, i, :, :].data = deepcopy(module_ori.weight[:, -1, :, :][:, np.newaxis, :, :].data)
                     flag = 1
                 elif module.weight.data.shape == module_ori.weight.data.shape:
-                    module.weight = deepcopy(module_ori.weight)
+                    module.weight.data = deepcopy(module_ori.weight.data)
                     module.bias = deepcopy(module_ori.bias)
                 else:
                     print('Skipping Conv layer with size: {} and target size: {}'
@@ -237,9 +237,9 @@ class MS_Deeplab(nn.Module):
 
     def forward(self, x):
         input_size = x.size()[2]
-        self.interp1 = nn.Upsample(size=(int(input_size*0.75)+1, int(input_size*0.75)+1), mode='bilinear')
-        self.interp2 = nn.Upsample(size=(int(input_size*0.5)+1, int(input_size*0.5)+1), mode='bilinear')
-        self.interp3 = nn.Upsample(size=(outS(input_size), outS(input_size)), mode='bilinear')
+        self.interp1 = nn.Upsample(size=(int(input_size*0.75)+1, int(input_size*0.75)+1), mode='bilinear', align_corners=True)
+        self.interp2 = nn.Upsample(size=(int(input_size*0.5)+1, int(input_size*0.5)+1), mode='bilinear', align_corners=True)
+        self.interp3 = nn.Upsample(size=(outS(input_size), outS(input_size)), mode='bilinear', align_corners=True)
         out = []
         x2 = self.interp1(x)
         x3 = self.interp2(x)

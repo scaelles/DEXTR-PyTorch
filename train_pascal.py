@@ -6,7 +6,6 @@ from collections import OrderedDict
 import glob
 
 # PyTorch includes
-from torch.autograd import Variable
 import torch.optim as optim
 from torchvision import transforms
 from torch.utils.data import DataLoader
@@ -26,10 +25,12 @@ from dataloaders.helpers import *
 
 # Set gpu_id to -1 to run in CPU mode, otherwise set the id of the corresponding gpu
 gpu_id = 0
-use_sbd = False
-print('Using GPU: {} '.format(gpu_id))
+device = torch.device("cuda:"+str(gpu_id) if torch.cuda.is_available() else "cpu")
+if torch.cuda.is_available():
+    print('Using GPU: {} '.format(gpu_id))
 
 # Setting parameters
+use_sbd = False
 nEpochs = 100  # Number of epochs for training
 resume_epoch = 0  # Default is 0, change if want to resume
 
@@ -73,9 +74,8 @@ else:
                    map_location=lambda storage, loc: storage))
 train_params = [{'params': resnet.get_1x_lr_params(net), 'lr': p['lr']},
                 {'params': resnet.get_10x_lr_params(net), 'lr': p['lr'] * 10}]
-if gpu_id >= 0:
-    torch.cuda.set_device(device=gpu_id)
-    net.cuda()
+
+net.to(device)
 
 # Training the network
 if resume_epoch != nEpochs:
@@ -141,16 +141,15 @@ if resume_epoch != nEpochs:
             inputs, gts = sample_batched['concat'], sample_batched['crop_gt']
 
             # Forward-Backward of the mini-batch
-            inputs, gts = Variable(inputs), Variable(gts)
-            if gpu_id >= 0:
-                inputs, gts = inputs.cuda(), gts.cuda()
+            inputs.requires_grad_()
+            inputs, gts = inputs.to(device), gts.to(device)
 
             output = net.forward(inputs)
-            output = upsample(output, size=(512, 512), mode='bilinear')
+            output = upsample(output, size=(512, 512), mode='bilinear', align_corners=True)
 
             # Compute the losses, side outputs and fuse
             loss = class_balanced_cross_entropy_loss(output, gts, size_average=False, batch_average=True)
-            running_loss_tr += loss.data[0]
+            running_loss_tr += loss.item()
 
             # Print stuff
             if ii % num_img_tr == num_img_tr - 1:
@@ -169,7 +168,7 @@ if resume_epoch != nEpochs:
 
             # Update the weights once in p['nAveGrad'] forward passes
             if aveGrad % p['nAveGrad'] == 0:
-                writer.add_scalar('data/total_loss_iter', loss.data[0], ii + num_img_tr * epoch)
+                writer.add_scalar('data/total_loss_iter', loss.item(), ii + num_img_tr * epoch)
                 optimizer.step()
                 optimizer.zero_grad()
                 aveGrad = 0
@@ -181,28 +180,27 @@ if resume_epoch != nEpochs:
         # One testing epoch
         if useTest and epoch % nTestInterval == (nTestInterval - 1):
             net.eval()
-            for ii, sample_batched in enumerate(testloader):
-                inputs, gts = sample_batched['concat'], sample_batched['crop_gt']
+            with torch.no_grad():
+                for ii, sample_batched in enumerate(testloader):
+                    inputs, gts = sample_batched['concat'], sample_batched['crop_gt']
 
-                # Forward pass of the mini-batch
-                inputs, gts = Variable(inputs, volatile=True), Variable(gts, volatile=True)
-                if gpu_id >= 0:
-                    inputs, gts = inputs.cuda(), gts.cuda()
+                    # Forward pass of the mini-batch
+                    inputs, gts = inputs.to(device), gts.to(device)
 
-                output = net.forward(inputs)
-                output = upsample(output, size=(512, 512), mode='bilinear')
+                    output = net.forward(inputs)
+                    output = upsample(output, size=(512, 512), mode='bilinear', align_corners=True)
 
-                # Compute the losses, side outputs and fuse
-                loss = class_balanced_cross_entropy_loss(output, gts, size_average=False)
-                running_loss_ts += loss.data[0]
+                    # Compute the losses, side outputs and fuse
+                    loss = class_balanced_cross_entropy_loss(output, gts, size_average=False)
+                    running_loss_ts += loss.item()
 
-                # Print stuff
-                if ii % num_img_ts == num_img_ts - 1:
-                    running_loss_ts = running_loss_ts / num_img_ts
-                    print('[Epoch: %d, numImages: %5d]' % (epoch, ii*testBatch+inputs.data.shape[0]))
-                    writer.add_scalar('data/test_loss_epoch', running_loss_ts, epoch)
-                    print('Loss: %f' % running_loss_ts)
-                    running_loss_ts = 0
+                    # Print stuff
+                    if ii % num_img_ts == num_img_ts - 1:
+                        running_loss_ts = running_loss_ts / num_img_ts
+                        print('[Epoch: %d, numImages: %5d]' % (epoch, ii*testBatch+inputs.data.shape[0]))
+                        writer.add_scalar('data/test_loss_epoch', running_loss_ts, epoch)
+                        print('Loss: %f' % running_loss_ts)
+                        running_loss_ts = 0
 
     writer.close()
 
@@ -223,26 +221,26 @@ if not os.path.exists(save_dir_res):
     os.makedirs(save_dir_res)
 
 print('Testing Network')
-# Main Testing Loop
-for ii, sample_batched in enumerate(testloader):
+with torch.no_grad():
+    # Main Testing Loop
+    for ii, sample_batched in enumerate(testloader):
 
-    inputs, gts, metas = sample_batched['concat'], sample_batched['gt'], sample_batched['meta']
+        inputs, gts, metas = sample_batched['concat'], sample_batched['gt'], sample_batched['meta']
 
-    # Forward of the mini-batch
-    inputs = Variable(inputs, volatile=True)
-    if gpu_id >= 0:
-        inputs = inputs.cuda()
+        # Forward of the mini-batch
+        inputs = inputs.to(device)
 
-    outputs = net.forward(inputs)
-    outputs = upsample(outputs, size=(512, 512), mode='bilinear')
+        outputs = net.forward(inputs)
+        outputs = upsample(outputs, size=(512, 512), mode='bilinear', align_corners=True)
+        outputs = outputs.to(torch.device('cpu'))
 
-    for jj in range(int(inputs.size()[0])):
-        pred = np.transpose(outputs.cpu().data.numpy()[jj, :, :, :], (1, 2, 0))
-        pred = 1 / (1 + np.exp(-pred))
-        pred = np.squeeze(pred)
-        gt = tens2image(gts[jj, :, :, :])
-        bbox = get_bbox(gt, pad=relax_crop, zero_pad=zero_pad_crop)
-        result = crop2fullmask(pred, bbox, gt, zero_pad=zero_pad_crop, relax=relax_crop)
+        for jj in range(int(inputs.size()[0])):
+            pred = np.transpose(outputs.data.numpy()[jj, :, :, :], (1, 2, 0))
+            pred = 1 / (1 + np.exp(-pred))
+            pred = np.squeeze(pred)
+            gt = tens2image(gts[jj, :, :, :])
+            bbox = get_bbox(gt, pad=relax_crop, zero_pad=zero_pad_crop)
+            result = crop2fullmask(pred, bbox, gt, zero_pad=zero_pad_crop, relax=relax_crop)
 
-        # Save the result, attention to the index jj
-        sm.imsave(os.path.join(save_dir_res, metas['image'][jj] + '-' + metas['object'][jj] + '.png'), result)
+            # Save the result, attention to the index jj
+            sm.imsave(os.path.join(save_dir_res, metas['image'][jj] + '-' + metas['object'][jj] + '.png'), result)
