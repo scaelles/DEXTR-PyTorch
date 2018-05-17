@@ -5,7 +5,7 @@ Visit our [project page](http://www.vision.ee.ethz.ch/~cvlsegmentation/dextr) fo
 
 This is the implementation of our work `Deep Extreme Cut (DEXTR)`, for object segmentation from extreme points.
 
-#### This code was ported to PyTorch 0.4.0!
+#### This code was ported to PyTorch 0.4.0! For the previous version of the code with Pytorch 0.3.1, please checkout [this branch](https://github.com/scaelles/DEXTR-PyTorch/tree/PyTorch-0.3.1).
 #### NEW: Keras with Tensorflow backend implementation also available: [DEXTR-KerasTensorflow](https://github.com/scaelles/DEXTR-KerasTensorflow )!
 
 ### Abstract
