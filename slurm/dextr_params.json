@@ -1,0 +1,5 @@
+{
+  "train_norm": ["True", "False"],
+  "use_sbd": ["True", "False"],
+  "batch_size": ["5", "7"]
+}

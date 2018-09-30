@@ -1,0 +1,13 @@
+#!/bin/bash
+source ~/.bashrc
+
+echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+MASTER_ADDR="${SLURM_NODELIST//[}"
+MASTER_ADDR="${MASTER_ADDR%-*}"
+echo "RANK=$SLURM_PROCID"
+echo "MASTER_ADDR=$MASTER_ADDR"
+RANK="$SLURM_PROCID" MASTER_ADDR="$MASTER_ADDR" MASTER_PORT=29500
+OMP_NUM_THREADS=10
+cd ..
+echo python train_pascal.py $@
+python train_pascal.py $@
