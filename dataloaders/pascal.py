@@ -64,10 +64,6 @@ class VOCSegmentation(data.Dataset):
         if download:
             self._download()
 
-        if not self._check_integrity():
-            raise RuntimeError('Dataset not found or corrupted.' +
-                               ' You can use download=True to download it')
-
         # train/val/test splits are pre-cut
         _splits_dir = os.path.join(_voc_root, 'ImageSets', 'Segmentation')
 
