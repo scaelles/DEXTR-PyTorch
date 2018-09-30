@@ -21,12 +21,12 @@ def outS(i):
 class Bottleneck(nn.Module):
     expansion = 4
 
-    def __init__(self, inplanes, planes, stride=1,  dilation_=1, downsample=None):
+    def __init__(self, inplanes, planes, stride=1,  dilation_=1, downsample=None, train_norm=False):
         super(Bottleneck, self).__init__()
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=False) # change
+        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=False)  # change
         self.bn1 = nn.BatchNorm2d(planes, affine=affine_par)
         for i in self.bn1.parameters():
-            i.requires_grad = False
+            i.requires_grad = train_norm
         padding = 1
         if dilation_ == 2:
             padding = 2
@@ -36,11 +36,11 @@ class Bottleneck(nn.Module):
                                padding=padding, bias=False, dilation=dilation_)
         self.bn2 = nn.BatchNorm2d(planes, affine=affine_par)
         for i in self.bn2.parameters():
-            i.requires_grad = False
+            i.requires_grad = train_norm
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4, affine=affine_par)
         for i in self.bn3.parameters():
-            i.requires_grad = False
+            i.requires_grad = train_norm
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
@@ -68,16 +68,17 @@ class Bottleneck(nn.Module):
         return out
 
 
-class ClassifierModule(nn.Module):
+class ASPPv2(nn.Module):
 
-    def __init__(self, dilation_series, padding_series, n_classes):
-        super(ClassifierModule, self).__init__()
+    def __init__(self, dilation_series, n_classes):
+        super(ASPPv2, self).__init__()
+        padding_series = dilation_series
         self.conv2d_list = nn.ModuleList()
         for dilation, padding in zip(dilation_series, padding_series):
-            self.conv2d_list.append(nn.Conv2d(2048, n_classes, kernel_size=3, stride=1, padding=padding, dilation=dilation, bias=True))
-
-        for m in self.conv2d_list:
-            m.weight.data.normal_(0, 0.01)
+            self.conv2d_list.append(nn.Conv2d(2048, n_classes,
+                                              kernel_size=3, stride=1,
+                                              padding=padding, dilation=dilation,
+                                              bias=True))
 
     def forward(self, x):
         out = self.conv2d_list[0](x)
@@ -115,7 +116,8 @@ class PSPModule(nn.Module):
 
     def forward(self, feats):
         h, w = feats.size(2), feats.size(3)
-        priors = [F.upsample(input=stage(feats), size=(h, w), mode='bilinear', align_corners=True) for stage in self.stages]
+        priors = [F.interpolate(input=stage(feats), size=(h, w), mode='bilinear', align_corners=True)
+                  for stage in self.stages]
         priors.append(feats)
         bottle = self.relu(self.bottleneck(torch.cat(priors, 1)))
         out = self.final(bottle)
@@ -124,21 +126,25 @@ class PSPModule(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, layers, n_classes, nInputChannels=3, classifier="atrous",
-                 dilations=(2, 4), strides=(2, 2, 2, 1, 1), _print=False):
+    def __init__(self, block, layers, n_classes, n_input_channels=3, classifier="atrous",
+                 dilations=(2, 4), strides=(2, 2, 2, 1, 1), _print=False, train_norm=False):
+        super(ResNet, self).__init__()
+
         if _print:
             print("Constructing ResNet model...")
             print("Dilations: {}".format(dilations))
             print("Number of classes: {}".format(n_classes))
-            print("Number of Input Channels: {}".format(nInputChannels))
+            print("Number of Input Channels: {}".format(n_input_channels))
+
         self.inplanes = 64
         self.classifier = classifier
-        super(ResNet, self).__init__()
-        self.conv1 = nn.Conv2d(nInputChannels, 64, kernel_size=7, stride=strides[0], padding=3,
+        self.train_norm = train_norm
+
+        self.conv1 = nn.Conv2d(n_input_channels, 64, kernel_size=7, stride=strides[0], padding=3,
                                bias=False)
         self.bn1 = nn.BatchNorm2d(64, affine=affine_par)
         for i in self.bn1.parameters():
-            i.requires_grad = False
+            i.requires_grad = self.train_norm
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=strides[1], padding=1, ceil_mode=False)
         self.layer1 = self._make_layer(block, 64, layers[0])
@@ -148,20 +154,16 @@ class ResNet(nn.Module):
 
         if classifier == "atrous":
             if _print:
-                print('Initializing classifier: A-trous pyramid')
-            self.layer5 = self._make_pred_layer(ClassifierModule, [6, 12, 18, 24], [6, 12, 18, 24], n_classes=n_classes)
+                print('Initializing classifier: A-trous pyramid (Deeplab v2)')
+            self.layer5 = ASPPv2(dilation_series=[6, 12, 18, 24], n_classes=n_classes)
         elif classifier == "psp":
             if _print:
                 print('Initializing classifier: PSP')
             self.layer5 = PSPModule(in_features=2048, out_features=512, sizes=(1, 2, 3, 6), n_classes=n_classes)
         else:
             self.layer5 = None
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                m.weight.data.normal_(0, 0.01)
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
+
+        self._initialize_weights()
 
     def _make_layer(self, block, planes, blocks, stride=1, dilation__=1):
         downsample = None
@@ -172,16 +174,22 @@ class ResNet(nn.Module):
                 nn.BatchNorm2d(planes * block.expansion, affine=affine_par),
             )
         for i in downsample._modules['1'].parameters():
-            i.requires_grad = False
-        layers = [block(self.inplanes, planes, stride, dilation_=dilation__, downsample=downsample)]
+            i.requires_grad = self.train_norm
+        layers = [block(self.inplanes, planes, stride, dilation_=dilation__,
+                        downsample=downsample, train_norm=self.train_norm)]
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes, dilation_=dilation__))
+            layers.append(block(self.inplanes, planes, dilation_=dilation__, train_norm=self.train_norm))
 
         return nn.Sequential(*layers)
 
-    def _make_pred_layer(self, block, dilation_series, padding_series, n_classes):
-        return block(dilation_series, padding_series, n_classes)
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                m.weight.data.normal_(0, 0.01)
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
 
     def forward(self, x, bbox=None):
         x = self.conv1(x)
@@ -196,11 +204,11 @@ class ResNet(nn.Module):
             x = self.layer5(x)
         return x
 
-    def load_pretrained_ms(self, base_network, nInputChannels=3):
+    def load_pretrained_ms(self, base_network, n_input_channels=3):
         flag = 0
         for module, module_ori in zip(self.modules(), base_network.Scale.modules()):
             if isinstance(module, nn.Conv2d) and isinstance(module_ori, nn.Conv2d):
-                if not flag and nInputChannels != 3:
+                if not flag and n_input_channels != 3:
                     module.weight[:, :3, :, :].data = deepcopy(module_ori.weight.data)
                     module.bias = deepcopy(module_ori.bias)
                     for i in range(3, int(module.weight.data.shape[1])):
@@ -214,26 +222,31 @@ class ResNet(nn.Module):
                           .format(module.weight.data.shape, module_ori.weight.data.shape))
             elif isinstance(module, nn.BatchNorm2d) and isinstance(module_ori, nn.BatchNorm2d) \
                     and module.weight.data.shape == module_ori.weight.data.shape:
+
+                # Copy running mean and variance of batchnorm layers!
+                module.running_mean.data = deepcopy(module_ori.running_mean.data)
+                module.running_var.data = deepcopy(module_ori.running_var.data)
+
                 module.weight.data = deepcopy(module_ori.weight.data)
                 module.bias.data = deepcopy(module_ori.bias.data)
 
 
-def resnet101(n_classes, pretrained=False, nInputChannels=3, classifier="atrous",
+def resnet101(n_classes, pretrained=False, n_input_channels=3, classifier="atrous", train_norm=False,
               dilations=(2, 4), strides=(2, 2, 2, 1, 1)):
     """Constructs a ResNet-101 model.
     """
-    model = ResNet(Bottleneck, [3, 4, 23, 3], n_classes, nInputChannels=nInputChannels,
-                   classifier=classifier, dilations=dilations, strides=strides, _print=True)
+    model = ResNet(Bottleneck, [3, 4, 23, 3], n_classes, n_input_channels=n_input_channels,
+                   classifier=classifier, dilations=dilations, strides=strides, _print=True, train_norm=train_norm)
     if pretrained:
         model_full = Res_Deeplab(n_classes, pretrained=pretrained)
-        model.load_pretrained_ms(model_full, nInputChannels=nInputChannels)
+        model.load_pretrained_ms(model_full, n_input_channels=n_input_channels)
     return model
 
 
 class MS_Deeplab(nn.Module):
-    def __init__(self, block, NoLabels, nInputChannels=3):
+    def __init__(self, block, NoLabels, n_input_channels=3):
         super(MS_Deeplab, self).__init__()
-        self.Scale = ResNet(block, [3, 4, 23, 3], NoLabels, nInputChannels=nInputChannels)
+        self.Scale = ResNet(block, [3, 4, 23, 3], NoLabels, n_input_channels=n_input_channels)
 
     def forward(self, x):
         input_size = x.size()[2]
