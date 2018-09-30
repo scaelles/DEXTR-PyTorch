@@ -232,7 +232,7 @@ def main():
                                                           model_name + '_epoch-' + str(epoch) + '.pth'))
 
             # One testing epoch
-            if args.use_test and epoch % args.n_test_interval == (args.n_test_interval - 1):
+            if args.use_test and epoch % args.test_interval == (args.test_interval - 1):
                 net.eval()
                 with torch.no_grad():
                     for ii, sample_batched in enumerate(testloader):
