@@ -1,49 +1,56 @@
 from __future__ import division
+
 import numpy as np
 import torch
-from torch.nn import functional as F
+import torch.nn as nn
 
 
-def class_balanced_cross_entropy_loss(output, label, size_average=True, batch_average=True, void_pixels=None):
-    """Define the class balanced cross entropy loss to train the network
-    Args:
-    output: Output of the network
-    label: Ground truth label
-    size_average: return per-element (pixel) average loss
-    batch_average: return per-batch average loss
-    void_pixels: pixels to ignore from the loss
-    Returns:
-    Tensor that evaluates the loss
+class BalancedCrossEntropyLoss(nn.Module):
     """
-    assert(output.size() == label.size())
+    Balanced Cross Entropy Loss with optional ignore regions
+    """
 
-    labels = torch.ge(label, 0.5).float()
+    def __init__(self, size_average=True, batch_average=True, pos_weight=None):
+        super(BalancedCrossEntropyLoss, self).__init__()
+        self.size_average = size_average
+        self.batch_average = batch_average
+        self.pos_weight = pos_weight
 
-    num_labels_pos = torch.sum(labels)
-    num_labels_neg = torch.sum(1.0 - labels)
-    num_total = num_labels_pos + num_labels_neg
+    def forward(self, output, label, void_pixels=None):
+        assert (output.size() == label.size())
+        labels = torch.ge(label, 0.5).float()
 
-    output_gt_zero = torch.ge(output, 0).float()
-    loss_val = torch.mul(output, (labels - output_gt_zero)) - torch.log(
-        1 + torch.exp(output - 2 * torch.mul(output, output_gt_zero)))
+        # Weighting of the loss, default is HED-style
+        if self.pos_weight is None:
+            num_labels_pos = torch.sum(labels)
+            num_labels_neg = torch.sum(1.0 - labels)
+            num_total = num_labels_pos + num_labels_neg
+            w = num_labels_neg / num_total
+        else:
+            w = self.pos_weight
 
-    loss_pos_pix = -torch.mul(labels, loss_val)
-    loss_neg_pix = -torch.mul(1.0 - labels, loss_val)
+        output_gt_zero = torch.ge(output, 0).float()
+        loss_val = torch.mul(output, (labels - output_gt_zero)) - torch.log(
+            1 + torch.exp(output - 2 * torch.mul(output, output_gt_zero)))
 
-    if void_pixels is not None:
-        w_void = torch.le(void_pixels, 0.5).float()
-        loss_pos_pix = torch.mul(w_void, loss_pos_pix)
-        loss_neg_pix = torch.mul(w_void, loss_neg_pix)
-        num_total = num_total - torch.ge(void_pixels, 0.5).float().sum()
+        loss_pos_pix = -torch.mul(labels, loss_val)
+        loss_neg_pix = -torch.mul(1.0 - labels, loss_val)
 
-    loss_pos = torch.sum(loss_pos_pix)
-    loss_neg = torch.sum(loss_neg_pix)
+        if void_pixels is not None and not self.pos_weight:
+            w_void = torch.le(void_pixels, 0.5).float()
+            loss_pos_pix = torch.mul(w_void, loss_pos_pix)
+            loss_neg_pix = torch.mul(w_void, loss_neg_pix)
+            num_total = num_total - torch.ge(void_pixels, 0.5).float().sum()
+            w = num_labels_neg / num_total
 
-    final_loss = num_labels_neg / num_total * loss_pos + num_labels_pos / num_total * loss_neg
+        loss_pos = torch.sum(loss_pos_pix)
+        loss_neg = torch.sum(loss_neg_pix)
 
-    if size_average:
-        final_loss /= np.prod(label.size())
-    elif batch_average:
-        final_loss /= label.size()[0]
+        final_loss = w * loss_pos + (1 - w) * loss_neg
 
-    return final_loss
+        if self.size_average:
+            final_loss /= float(np.prod(label.size()))
+        elif self.batch_average:
+            final_loss /= label.size()[0]
+
+        return final_loss
