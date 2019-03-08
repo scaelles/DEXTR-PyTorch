@@ -1,4 +1,5 @@
 import os
+import sys
 import torch
 from collections import OrderedDict
 from PIL import Image
@@ -46,6 +47,13 @@ results = []
 with torch.no_grad():
     while 1:
         extreme_points_ori = np.array(plt.ginput(4, timeout=0)).astype(np.int)
+        if extreme_points_ori.shape[0] < 4:
+            if len(results) > 0:
+                helpers.save_mask(results, 'demo.png')
+                print('Saving mask annotation in demo.png and exiting...')
+            else:
+                print('Exiting...')
+            sys.exit()
 
         #  Crop image to the bounding box from the extreme points and resize
         bbox = helpers.get_bbox(image, points=extreme_points_ori, pad=pad, zero_pad=True)
